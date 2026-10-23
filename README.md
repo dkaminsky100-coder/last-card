@@ -34,9 +34,28 @@ to empty your hand.
 | Draw | Tap the draw pile | <kbd>D</kbd> |
 | Call "Last card!" | Tap the button | <kbd>L</kbd> |
 | Keep a drawn card and pass | Tap the button | <kbd>P</kbd> |
+| Sound on/off | Speaker button | <kbd>M</kbd> |
 
 Each color also has a shape (red ▲, yellow ●, green ■, blue ◆), shown in the
 card corners, the color picker and the current-color indicator.
+
+## Features
+
+- **1–3 bots, each with its own difficulty.** Set them on the start screen, e.g.
+  one easy and one hard.
+- **Light and dark themes.** Choose Auto (follows your OS), Light or Dark on
+  the start screen.
+- **Sound effects,** synthesized with Web Audio, so there are no audio files.
+  Toggle with the speaker button or <kbd>M</kbd>.
+- **Stats across games:** win rate, rounds won, best round, total points and
+  win streaks. Open **Your stats** from the menu. Your record also shows on
+  the game-over screen.
+- **Installable and offline.** A service worker caches the game, so once
+  loaded it works without a connection. In Chrome or Edge, use the install
+  icon in the address bar. On iOS Safari, use Share → Add to Home Screen.
+  Installing needs `https://` or `localhost`.
+- **Resume:** the game in progress is saved, so a reload picks up where you
+  left off.
 
 ## Rules
 
@@ -99,7 +118,7 @@ the game.
   - keeps a lone Wild as its final card;
   - always calls "Last card".
 
-Bot speed (slow / normal / fast / instant) controls the thinking delay
+Each bot's difficulty is chosen separately. Bot speed (slow / normal / fast / instant) controls the thinking delay
 (normal is 600–1000 ms). Whatever the speed, you always get at least 1.6 s
 to call "Last card" before a bot moves.
 
@@ -125,6 +144,10 @@ src/bots.js         chooseMove(state, playerId, difficulty, rand?)
 src/ui.js           rendering, input, keyboard, FLIP card animations
 src/main.js         turn loop, settings, localStorage persistence
 src/rng.js          seeded mulberry32 RNG
+src/sound.js        synthesized sound effects (Web Audio)
+src/stats.js        lifetime stats (pure functions)
+sw.js               service worker (network-first, cache fallback)
+manifest.webmanifest, icons/   install metadata and app icons
 sim.js              headless bot-vs-bot simulation
 test/               node:test suites
 ```
@@ -136,3 +159,8 @@ The engine is pure. `applyMove(state, move)` validates the move against
 with `playerId`. The RNG state lives inside the game state, so a seed
 reproduces a game exactly. Settings and the game in progress, including the
 running score, are saved to `localStorage`, so a reload offers **Resume**.
+Stats live under a separate key, so starting a new game never clears them.
+
+The service worker is network-first: while online you always get the latest
+files, and the cache is only used offline. If you add new source files, add
+them to `SHELL` in `sw.js` and bump `CACHE` so they're available offline.

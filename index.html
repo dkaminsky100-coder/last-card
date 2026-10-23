@@ -6,7 +6,17 @@
   <title>Last Card</title>
   <meta name="description" content="Last Card: a fast shedding card game against computer opponents.">
   <meta name="theme-color" content="#140f22">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='4' fill='%23E0442F' transform='rotate(-10 16 16)'/%3E%3Crect x='7' y='4' width='20' height='26' rx='4' fill='%233166E6' transform='rotate(8 16 16)'/%3E%3Ctext x='16' y='22' font-family='Arial Black' font-size='15' text-anchor='middle' fill='white'%3E1%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      var t = (JSON.parse(localStorage.getItem('lastcard.v1') || '{}').settings || {}).theme || 'auto';
+      if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+    } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Dela+Gothic+One&display=swap" rel="stylesheet">
@@ -18,6 +28,7 @@
       <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>Last Card</h1>
       <div id="scoreboard" class="scoreboard" aria-label="Scores"></div>
       <div class="topbar-actions">
+        <button id="sound-btn" class="chip-btn icon-btn" type="button" aria-pressed="true" aria-label="Sound (M)" title="Sound (M)"></button>
         <button id="log-toggle" class="chip-btn" type="button" aria-expanded="false" aria-controls="log-panel">Log</button>
         <button id="menu-btn" class="chip-btn" type="button">Menu</button>
       </div>
@@ -93,11 +104,11 @@
         <label><input type="radio" name="bots" value="2"><span>2</span></label>
         <label><input type="radio" name="bots" value="3"><span>3</span></label>
       </fieldset>
-      <fieldset class="seg">
+      <fieldset class="bot-levels">
         <legend>Difficulty</legend>
-        <label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label>
-        <label><input type="radio" name="difficulty" value="medium"><span>Medium</span></label>
-        <label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label>
+        <div class="bot-level" data-bot="1"></div>
+        <div class="bot-level" data-bot="2"></div>
+        <div class="bot-level" data-bot="3"></div>
       </fieldset>
       <fieldset class="seg">
         <legend>Bot speed</legend>
@@ -105,6 +116,12 @@
         <label><input type="radio" name="speed" value="normal"><span>Normal</span></label>
         <label><input type="radio" name="speed" value="fast"><span>Fast</span></label>
         <label><input type="radio" name="speed" value="instant"><span>Instant</span></label>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Theme</legend>
+        <label><input type="radio" name="theme" value="auto"><span>Auto</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
       </fieldset>
       <fieldset class="toggles">
         <legend>House rules</legend>
@@ -116,8 +133,18 @@
         <button id="resume-btn" class="big-btn ghost" type="button" hidden>Resume</button>
         <button id="deal-btn" class="big-btn" type="submit" value="deal">Deal new game</button>
       </div>
-      <p class="start-foot">First to 200 points wins. Keys: <kbd>←</kbd><kbd>→</kbd> choose, <kbd>Enter</kbd> play, <kbd>D</kbd> draw, <kbd>L</kbd> last card.</p>
+      <div class="start-links"><button id="stats-btn" class="text-btn" type="button">Your stats</button></div>
+      <p class="start-foot">First to 200 points wins. Keys: <kbd>←</kbd><kbd>→</kbd> choose, <kbd>Enter</kbd> play, <kbd>D</kbd> draw, <kbd>L</kbd> last card, <kbd>M</kbd> sound.</p>
     </form>
+  </dialog>
+
+  <dialog id="stats-dialog" class="dialog" aria-labelledby="stats-title">
+    <h2 id="stats-title">Your stats</h2>
+    <div id="stats-body"></div>
+    <div class="dialog-actions">
+      <button id="stats-reset" class="big-btn ghost" type="button">Reset stats</button>
+      <button id="stats-close" class="big-btn" type="button">Done</button>
+    </div>
   </dialog>
 
   <script type="module" src="src/main.js"></script>

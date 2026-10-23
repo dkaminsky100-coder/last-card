@@ -26,8 +26,12 @@ const ICONS = {
     <path d="M50 50v41A41 41 0 0 1 9 50Z" fill="var(--blue)"/>
     <path d="M50 50H9a41 41 0 0 1 41-41Z" fill="var(--red)"/></g>
     <circle cx="50" cy="50" r="11" fill="var(--ink)" stroke="white" stroke-width="4"/></svg>`,
-  direction: '<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M50 6a44 44 0 0 1 41 28"/><path d="M50 94A44 44 0 0 1 9 66"/></g><path d="M93 40 89 30l-8 6Z M7 60l4 10 8-6Z" fill="white"/></svg>',
+  direction: '<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M50 6a44 44 0 0 1 41 28"/><path d="M50 94A44 44 0 0 1 9 66"/></g><path d="M93 40 89 30l-8 6Z M7 60l4 10 8-6Z" fill="currentColor"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="m17 9 5 6M22 9l-5 6"/></svg>',
 };
+
+const DIFFICULTY_LABELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
 function faceHTML(card) {
   switch (card.value) {
@@ -55,6 +59,8 @@ export function cardHTML(card, { tag = 'div', cls = '', attrs = '' } = {}) {
     <span class="corner br" aria-hidden="true">${cornerHTML(card)}</span>
   </${tag}>`;
 }
+
+const pct = (x) => (x === null || x === undefined ? '–' : `${Math.round(x * 100)}%`);
 
 const describeCard = (card) => (card.color ? `${cardLabel(card)} (${SHAPE_NAMES[card.color]})` : cardLabel(card));
 
@@ -85,6 +91,8 @@ export function createUI(handlers) {
     roundDialog: $('#round-dialog'),
     startDialog: $('#start-dialog'),
     startForm: $('#start-form'),
+    soundBtn: $('#sound-btn'),
+    statsDialog: $('#stats-dialog'),
   };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = null; // { state, view }
@@ -133,11 +141,22 @@ export function createUI(handlers) {
     els.logToggle.setAttribute('aria-expanded', String(open));
   });
   $('#menu-btn').addEventListener('click', () => handlers.menu());
+  els.soundBtn.addEventListener('click', () => handlers.toggleSound());
+
+  function setSound(on) {
+    els.soundBtn.innerHTML = on ? ICONS.soundOn : ICONS.soundOff;
+    els.soundBtn.setAttribute('aria-pressed', String(on));
+    els.soundBtn.title = on ? 'Sound on (M)' : 'Sound off (M)';
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (document.querySelector('dialog[open]')) return;
     const key = e.key.toLowerCase();
+    if (key === 'm') {
+      handlers.toggleSound();
+      return;
+    }
+    if (document.querySelector('dialog[open]')) return;
     if (key === 'arrowleft' || key === 'arrowright') {
       const cards = [...els.hand.querySelectorAll('[data-card]')];
       if (cards.length === 0) return;
@@ -217,7 +236,7 @@ export function createUI(handlers) {
   });
   els.roundDialog.addEventListener('cancel', (e) => e.preventDefault());
 
-  function showRoundEnd(state, humanId) {
+  function showRoundEnd(state, humanId, record) {
     const w = state.players[state.roundWinner];
     const over = state.phase === 'gameOver';
     const you = w.id === humanId;
@@ -225,6 +244,12 @@ export function createUI(handlers) {
       ? (you ? 'You win the game!' : `${w.name} wins the game`)
       : (you ? 'You won the round!' : `${w.name} takes the round`);
     $('#round-text').textContent = `+${state.roundPoints} points from the cards left in hand.${over ? '' : ` First to ${state.opts.targetScore} wins.`}`;
+    if (over && record?.games) {
+      const line = document.createElement('span');
+      line.className = 'record-line';
+      line.textContent = ` Your record: ${record.wins} of ${record.games} game${record.games === 1 ? '' : 's'} won (${pct(record.winRate)})${record.streak > 1 ? `, ${record.streak} in a row` : ''}.`;
+      $('#round-text').append(line);
+    }
     const rows = state.players
       .slice()
       .sort((a, b) => b.score - a.score)
@@ -241,14 +266,32 @@ export function createUI(handlers) {
   // ------------------------------------------------------------ start screen
 
   let resumeAvailable = false;
+  const levelRows = [...els.startForm.querySelectorAll('.bot-level')];
+  for (const row of levelRows) {
+    const n = row.dataset.bot;
+    row.innerHTML = `<span class="bot-level-name">Bot ${n}</span>
+      <div class="seg" role="radiogroup" aria-label="Bot ${n} difficulty">
+        ${Object.entries(DIFFICULTY_LABELS).map(([v, label]) => `<label><input type="radio" name="diff${n}" value="${v}"><span>${label}</span></label>`).join('')}
+      </div>`;
+  }
+  const syncLevelRows = () => {
+    const bots = Number(new FormData(els.startForm).get('bots')) || 1;
+    levelRows.forEach((row) => { row.hidden = Number(row.dataset.bot) > bots; });
+  };
+  els.startForm.addEventListener('change', (e) => {
+    if (e.target.name === 'bots') syncLevelRows();
+    if (e.target.name === 'theme') handlers.setTheme(e.target.value);
+  });
+
   els.startForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(els.startForm);
     els.startDialog.close();
     handlers.newGame({
       bots: Number(f.get('bots')),
-      difficulty: f.get('difficulty'),
+      difficulties: [1, 2, 3].map((n) => f.get(`diff${n}`)),
       speed: f.get('speed'),
+      theme: f.get('theme'),
       stackDrawTwo: f.get('stackDrawTwo') === 'on',
       challengeWild4: f.get('challengeWild4') === 'on',
     });
@@ -268,16 +311,55 @@ export function createUI(handlers) {
   function openStart(settings, canResume) {
     resumeAvailable = canResume;
     const form = els.startForm;
-    for (const name of ['bots', 'difficulty', 'speed']) {
-      const input = form.querySelector(`input[name="${name}"][value="${settings[name]}"]`);
+    const check = (name, value) => {
+      const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
       if (input) input.checked = true;
-    }
+    };
+    check('bots', settings.bots);
+    check('speed', settings.speed);
+    check('theme', settings.theme);
+    settings.difficulties.forEach((d, i) => check(`diff${i + 1}`, d));
+    syncLevelRows();
     form.elements.stackDrawTwo.checked = !!settings.stackDrawTwo;
     form.elements.challengeWild4.checked = !!settings.challengeWild4;
     $('#resume-btn').hidden = !canResume;
     for (const d of [els.colorDialog, els.challengeDialog, els.roundDialog]) if (d.open) d.close();
     if (!els.startDialog.open) els.startDialog.showModal();
     $('#deal-btn').focus();
+  }
+
+  // ------------------------------------------------------------ stats
+
+  $('#stats-btn').addEventListener('click', () => handlers.showStats());
+  $('#stats-close').addEventListener('click', () => els.statsDialog.close());
+  const resetBtn = $('#stats-reset');
+  resetBtn.addEventListener('click', () => {
+    if (resetBtn.dataset.confirm) {
+      handlers.resetStats();
+    } else {
+      resetBtn.dataset.confirm = '1';
+      resetBtn.textContent = 'Tap again to reset';
+    }
+  });
+
+  function openStats(st) {
+    resetBtn.textContent = 'Reset stats';
+    delete resetBtn.dataset.confirm;
+    resetBtn.hidden = st.rounds === 0;
+    const tile = (value, label) => `<div class="stat"><span class="stat-value">${value}</span><span class="stat-label">${label}</span></div>`;
+    $('#stats-body').innerHTML = st.rounds === 0
+      ? '<p class="stats-empty">No rounds finished yet. Deal a game and your record will show up here.</p>'
+      : `<div class="stats-grid">
+          <div class="stat hero"><span class="stat-value">${pct(st.winRate)}</span><span class="stat-label">Game win rate</span><span class="stat-sub">${st.wins} of ${st.games} game${st.games === 1 ? '' : 's'} won</span></div>
+          ${tile(pct(st.roundRate), `Rounds won (${st.roundsWon}/${st.rounds})`)}
+          ${tile(st.bestRound, 'Best round (points)')}
+          ${tile(st.points, 'Total points')}
+          ${tile(st.streak, 'Current win streak')}
+          ${tile(st.bestStreak, 'Best win streak')}
+          ${tile(st.roundsWon ? Math.round(st.points / st.roundsWon) : 0, 'Avg points per round won')}
+        </div>`;
+    if (!els.statsDialog.open) els.statsDialog.showModal();
+    $('#stats-close').focus();
   }
 
   // ------------------------------------------------------------ prompt / log
@@ -456,7 +538,7 @@ export function createUI(handlers) {
       const active = state.current === p.id && state.phase !== 'roundOver' && state.phase !== 'gameOver';
       return `<section class="seat seat--${layout[i]} ${active ? 'active' : ''}" data-seat="${p.id}" aria-label="${p.name}, ${count} card${count === 1 ? '' : 's'}">
         ${bubble ? `<span class="bubble ${bubble.bad ? 'bad' : ''}">${bubble.text}</span>` : ''}
-        <div class="seat-name">${p.name}<span class="seat-tag">${view.difficulty}</span>${active && view.thinking ? '<span class="thinking" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</div>
+        <div class="seat-name">${p.name}<span class="seat-tag">${view.difficulties[p.id]}</span>${active && view.thinking ? '<span class="thinking" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</div>
         <div class="fan" aria-hidden="true">${backs}${count > shown ? `<span class="fan-more">+${count - shown}</span>` : ''}</div>
         <div class="seat-meta"><b>${count}</b> card${count === 1 ? '' : 's'} · ${p.score} pts</div>
       </section>`;
@@ -539,5 +621,5 @@ export function createUI(handlers) {
   }
   window.addEventListener('resize', fitHand);
 
-  return { render, addLog, clearLog, openStart, showRoundEnd, flashPrompt };
+  return { render, addLog, clearLog, openStart, showRoundEnd, flashPrompt, openStats, setSound };
 }
