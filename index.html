@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Last Card</title>
+  <meta name="description" content="Last Card: a fast shedding card game against computer opponents.">
+  <meta name="theme-color" content="#140f22">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='4' fill='%23E0442F' transform='rotate(-10 16 16)'/%3E%3Crect x='7' y='4' width='20' height='26' rx='4' fill='%233166E6' transform='rotate(8 16 16)'/%3E%3Ctext x='16' y='22' font-family='Arial Black' font-size='15' text-anchor='middle' fill='white'%3E1%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>Last Card</h1>
+      <div id="scoreboard" class="scoreboard" aria-label="Scores"></div>
+      <div class="topbar-actions">
+        <button id="log-toggle" class="chip-btn" type="button" aria-expanded="false" aria-controls="log-panel">Log</button>
+        <button id="menu-btn" class="chip-btn" type="button">Menu</button>
+      </div>
+    </header>
+
+    <main id="table" class="table" aria-label="Card table">
+      <div id="seats" class="seats"></div>
+
+      <section class="center" aria-label="Piles">
+        <div id="direction" class="direction" aria-hidden="true"></div>
+        <button id="draw-pile" class="pile draw-pile" type="button" aria-label="Draw a card (D)">
+          <span class="pile-stack" aria-hidden="true"></span>
+          <span id="draw-count" class="pile-count"></span>
+        </button>
+        <div id="discard" class="pile discard-pile" aria-live="off"></div>
+        <div id="color-indicator" class="color-indicator" role="status"></div>
+      </section>
+
+      <section class="me" aria-label="Your hand">
+        <div class="me-bar">
+          <div id="me-info" class="me-info"></div>
+          <div class="me-actions">
+            <button id="pass-btn" class="action-btn" type="button" hidden>Keep it &amp; pass <kbd>P</kbd></button>
+            <button id="last-btn" class="action-btn last-btn" type="button" hidden>Last card! <kbd>L</kbd></button>
+          </div>
+        </div>
+        <div id="prompt" class="prompt" role="status" aria-live="polite"></div>
+        <div id="hand" class="hand" role="toolbar" aria-label="Your cards. Arrow keys to move, Enter to play."></div>
+      </section>
+    </main>
+
+    <aside id="log-panel" class="log-panel" aria-label="Game log">
+      <h2 class="log-title">Table talk</h2>
+      <ol id="log" class="log"></ol>
+    </aside>
+  </div>
+
+  <div id="live" class="sr-only" aria-live="polite"></div>
+
+  <dialog id="color-dialog" class="dialog color-dialog" aria-labelledby="color-title">
+    <h2 id="color-title">Pick a color</h2>
+    <div id="color-options" class="color-options"></div>
+    <button class="text-btn" type="button" data-close>Cancel</button>
+  </dialog>
+
+  <dialog id="challenge-dialog" class="dialog" aria-labelledby="challenge-title">
+    <h2 id="challenge-title">Wild Draw Four!</h2>
+    <p id="challenge-text"></p>
+    <div class="dialog-actions">
+      <button id="challenge-yes" class="big-btn" type="button">Challenge</button>
+      <button id="challenge-no" class="big-btn ghost" type="button">Draw 4</button>
+    </div>
+  </dialog>
+
+  <dialog id="round-dialog" class="dialog round-dialog" aria-labelledby="round-title">
+    <h2 id="round-title"></h2>
+    <p id="round-text"></p>
+    <table id="round-scores" class="score-table"></table>
+    <div class="dialog-actions">
+      <button id="round-next" class="big-btn" type="button"></button>
+    </div>
+  </dialog>
+
+  <dialog id="start-dialog" class="dialog start-dialog" aria-labelledby="start-title">
+    <form id="start-form" method="dialog">
+      <div class="start-hero" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <h2 id="start-title" class="start-title">Last Card</h2>
+      <p class="start-sub">Shed your hand first. Shout when you're down to one.</p>
+
+      <fieldset class="seg">
+        <legend>Opponents</legend>
+        <label><input type="radio" name="bots" value="1"><span>1</span></label>
+        <label><input type="radio" name="bots" value="2"><span>2</span></label>
+        <label><input type="radio" name="bots" value="3"><span>3</span></label>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Difficulty</legend>
+        <label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label>
+        <label><input type="radio" name="difficulty" value="medium"><span>Medium</span></label>
+        <label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Bot speed</legend>
+        <label><input type="radio" name="speed" value="slow"><span>Slow</span></label>
+        <label><input type="radio" name="speed" value="normal"><span>Normal</span></label>
+        <label><input type="radio" name="speed" value="fast"><span>Fast</span></label>
+        <label><input type="radio" name="speed" value="instant"><span>Instant</span></label>
+      </fieldset>
+      <fieldset class="toggles">
+        <legend>House rules</legend>
+        <label class="toggle"><input type="checkbox" name="stackDrawTwo"><span class="switch" aria-hidden="true"></span>Stack Draw Two on Draw Two</label>
+        <label class="toggle"><input type="checkbox" name="challengeWild4"><span class="switch" aria-hidden="true"></span>Allow challenging Wild Draw Four</label>
+      </fieldset>
+
+      <div class="dialog-actions">
+        <button id="resume-btn" class="big-btn ghost" type="button" hidden>Resume</button>
+        <button id="deal-btn" class="big-btn" type="submit" value="deal">Deal new game</button>
+      </div>
+      <p class="start-foot">First to 200 points wins. Keys: <kbd>←</kbd><kbd>→</kbd> choose, <kbd>Enter</kbd> play, <kbd>D</kbd> draw, <kbd>L</kbd> last card.</p>
+    </form>
+  </dialog>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
