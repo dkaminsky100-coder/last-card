@@ -1,0 +1,10 @@
+{
+  "name": "last-card",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "sim": "node sim.js",
+    "start": "npx serve ."
+  }
+}
