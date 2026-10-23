@@ -206,7 +206,17 @@ kbd {
   transform-origin: 50% 120%;
 }
 .fan .back:first-child { margin-left: 0; }
-.fan-more { align-self: center; margin-left: 6px; font-size: 0.75rem; color: var(--muted); }
+.fan-more {
+  align-self: center;
+  position: relative;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink-deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
 
 .thinking { display: inline-flex; gap: 3px; height: 8px; align-items: center; }
 .thinking i {
