@@ -3,10 +3,12 @@
 A single-player shedding card game in the browser: you against 1–3 computer
 opponents. Plain HTML, CSS and ES modules. No build step, no dependencies.
 
+**▶ Play it now: https://dkaminsky100-coder.github.io/last-card/**
+
 ## Play and install
 
 **Online (easiest):** open the hosted game at
-`https://<your-user>.github.io/<this-repo>/` and play right away. To install
+https://dkaminsky100-coder.github.io/last-card/ and play right away. To install
 it as an app, use the install icon in Chrome or Edge's address bar, or
 Share → Add to Home Screen on iOS. Once installed, it has its own window and
 Start-menu/home-screen icon and works offline.
@@ -28,10 +30,8 @@ python -m http.server 8000   # then open http://localhost:8000
 ### Publishing your copy
 
 `.github/workflows/pages.yml` runs the tests and deploys the game to GitHub
-Pages on every push to `main` or `master`. One-time setup after your first
-push: in the repo, go to **Settings → Pages → Build and deployment → Source**
-and choose **GitHub Actions**, then re-run the workflow (or push again).
-Replace the URL placeholder above with your Pages address.
+Pages on every push to `main` or `master`. For a fork, enable it once under
+**Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 ## Development
 
